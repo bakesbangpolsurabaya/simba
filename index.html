@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Inventory</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 id="status-role">Memuat Hak Akses...</h2>
+            <button onclick="logout()" style="background: #666;">Logout</button>
+        </div>
+
+        <div id="panel-superadmin" style="display: none;">
+            <div class="card">
+                <h3>Master Data / Barang Masuk</h3>
+                <input type="text" id="itemName" placeholder="Nama Barang">
+                <input type="number" id="itemQty" placeholder="Tambah Stok">
+                <button onclick="updateStok()" class="btn-in">Update/Tambah Stok</button>
+            </div>
+
+            <div class="card">
+                <h3>Persetujuan Permintaan Keluar</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Barang</th>
+                            <th>Bidang</th>
+                            <th>Qty</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-permintaan"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="panel-bidang" style="display: none;">
+            <div class="card">
+                <h3>Form Permintaan Barang</h3>
+                <input type="text" id="reqName" placeholder="Nama Barang">
+                <input type="number" id="reqQty" placeholder="Jumlah yang Diminta">
+                <button onclick="kirimRequest()" class="btn-out" style="width: 100%;">Kirim Permintaan</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Stok Gudang Saat Ini</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nama Barang</th>
+                        <th>Tersedia</th>
+                        <th>Terakhir Update</th>
+                    </tr>
+                </thead>
+                <tbody id="list-stok"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

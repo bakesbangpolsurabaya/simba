@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Inventory Simba</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body>
+    <div class="card" style="max-width: 400px; margin: 100px auto; padding: 20px;">
+        <h2>Login Inventory</h2>
+        <input type="email" id="email" placeholder="Email Kantor">
+        <input type="password" id="password" placeholder="Password">
+        <button id="btnLogin" class="btn-in" style="width: 100%; margin-top: 10px;">Masuk</button>
+        <p id="msg" style="color: red;"></p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzSLhMz3g4yDYJEQB8xe3EDv0dxDRg9-k",
+            authDomain: "simba-63df0.firebaseapp.com",
+            projectId: "simba-63df0",
+            storageBucket: "simba-63df0.firebasestorage.app",
+            messagingSenderId: "131114722418",
+            appId: "1:131114722418:web:6136ef94ba6efde8e2ceeb"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.getElementById("btnLogin").onclick = async () => {
+            const e = document.getElementById("email").value;
+            const p = document.getElementById("password").value;
+            try {
+                await signInWithEmailAndPassword(auth, e, p);
+                window.location.href = "index.html";
+            } catch (err) {
+                document.getElementById("msg").innerText = "Gagal: " + err.message;
+            }
+        };
+    </script>
+</body>
+</html>
