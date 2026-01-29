@@ -16,6 +16,9 @@ import {
   serverTimestamp,
   deleteDoc,
   addDoc,
+  query,
+  where,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -31,40 +34,85 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- 1. PROTEKSI HALAMAN & ROLE ---
+let unsubscribeTransaksi = null;
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
+    if (unsubscribeTransaksi) unsubscribeTransaksi();
     window.location.href = "login.html";
   } else {
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-    if (userSnap.exists()) {
-      const rawRole = userSnap.data().role;
-      const role = rawRole.toLowerCase().replace(/\s+/g, "_");
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const rawRole = userData.role;
+        const role = rawRole.toLowerCase().replace(/\s+/g, "_");
+        const namaBidangUser = userData.nama_bidang; 
 
-      console.log("Role asli di DB:", rawRole);
-      console.log("Role setelah diproses:", role);
+        document.getElementById("panel-superadmin").style.display = "none";
+        document.getElementById("panel-bidang").style.display = "none";
+        document.getElementById("btn-import-excel").style.display = "none";
 
-      document.getElementById("panel-superadmin").style.display = "none";
-      document.getElementById("panel-bidang").style.display = "none";
+        if (role === "superadmin") {
+          document.getElementById("panel-superadmin").style.display = "block";
+          document.getElementById("btn-import-excel").style.display = "block";
+          document.getElementById("status-role").innerText = "Role: SUPER ADMIN";
+          
+          setupRiwayatTransaksi(null); 
+        } 
+        else if (role === "admin_bidang") {
+          document.getElementById("panel-bidang").style.display = "flex";
+          document.getElementById("status-role").innerText = `Role: ADMIN BIDANG (${namaBidangUser})`;
 
-      if (role === "superadmin") {
-        document.getElementById("panel-superadmin").style.display = "block";
-        document.getElementById("status-role").innerText = "Role: SUPER ADMIN";
-      } else if (role === "admin_bidang") {
-        document.getElementById("panel-bidang").style.display = "block";
-        document.getElementById("status-role").innerText = "Role: ADMIN BIDANG";
+          setupRiwayatTransaksi(namaBidangUser);
+        }
       } else {
-        document.getElementById("status-role").innerText =
-          "Role Tidak Dikenali: " + rawRole;
+        alert("Data user tidak ditemukan di Firestore!");
       }
-    } else {
-      console.error("UID tidak ditemukan di koleksi users:", user.uid);
-      alert("User belum terdaftar di Firestore!");
+    } catch (error) {
+      console.error("Error Auth Logic:", error);
     }
   }
 });
+
+function setupRiwayatTransaksi(filterBidang) {
+  if (unsubscribeTransaksi) unsubscribeTransaksi();
+
+  let q;
+  if (filterBidang) {
+    q = query(
+      collection(db, "transaksi"),
+      where("jenis_transaksi", "==", false),
+      where("bidang", "==", filterBidang)
+    );
+  } else {
+    q = query(collection(db, "transaksi"), orderBy("created_at", "desc"));
+  }
+
+  unsubscribeTransaksi = onSnapshot(q, (snapshot) => {
+    const table = document.getElementById("list-bidang"); 
+    if (!table) return;
+
+    table.innerHTML = "";
+    if (snapshot.empty) {
+      table.innerHTML = "<tr><td colspan='4' style='text-align:center'>Belum ada transaksi.</td></tr>";
+      return;
+    }
+
+    snapshot.forEach((d) => {
+      const t = d.data();
+      table.innerHTML += `
+        <tr>
+          <td style="text-transform: capitalize;">${t.nama_barang}</td>
+          <td>${t.bidang || "-"}</td>
+          <td>${t.qty}</td>
+          <td>${t.created_at?.toDate().toLocaleDateString("id-ID") || "..." }</td>
+        </tr>`;
+    });
+  });
+}
 
 // --- 2. FITUR SUPER ADMIN: UPDATE STOK ---
 window.updateStok = async () => {
@@ -73,7 +121,6 @@ window.updateStok = async () => {
   if (!nama || isNaN(qty)) return;
 
   try {
-    // A. Update/Tambah Stok Utama di koleksi 'barang'
     const barangRef = doc(db, "barang", nama);
     await setDoc(
       barangRef,
@@ -85,11 +132,10 @@ window.updateStok = async () => {
       { merge: true },
     );
 
-    // B. Catat Riwayat ke koleksi 'transaksi' (Sesuai image_ea78d3.png)
     await addDoc(collection(db, "transaksi"), {
       nama_barang: nama,
       qty: qty,
-      jenis_transaksi: true, // Anda bisa gunakan string atau boolean true
+      jenis_transaksi: true, 
       created_at: serverTimestamp(),
     });
 
@@ -110,28 +156,24 @@ window.kirimRequest = async () => {
     if (!user) return alert("Sesi berakhir, silakan login kembali.");
 
     try {
-      // 2. Ambil data bidang langsung dari koleksi 'users' berdasarkan UID
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         const dataUser = userSnap.data();
-        const namaBidang = dataUser.nama_bidang; // Pastikan field 'nama_bidang' ada di Firestore
+        const namaBidang = dataUser.nama_bidang; 
 
-        // 3. Ambil nilai dari input form
         const namaBarang = document.getElementById("reqName").value.toLowerCase();
         const qty = parseInt(document.getElementById("reqQty").value);
 
-        // Validasi input
         if (!namaBarang || isNaN(qty) || qty <= 0) {
           return alert("Mohon isi nama barang dan jumlah dengan benar.");
         }
 
-        // 4. Kirim data ke koleksi 'permintaan'
         await addDoc(collection(db, "permintaan"), {
           nama_barang: namaBarang,
           jumlah: qty,
-          bidang: namaBidang, // Menggunakan data otomatis dari profil user
+          bidang: namaBidang, 
           status: "pending",
           timestamp: serverTimestamp(),
         });
@@ -153,7 +195,6 @@ onSnapshot(collection(db, "permintaan"), (snapshot) => {
   const table = document.getElementById("list-permintaan");
   table.innerHTML = "";
 
-  // 1. Cek jika snapshot kosong
   if (snapshot.empty) {
     table.innerHTML = `
             <tr>
@@ -161,10 +202,9 @@ onSnapshot(collection(db, "permintaan"), (snapshot) => {
                     Tidak ada permintaan barang saat ini.
                 </td>
             </tr>`;
-    return; // Berhenti di sini, jangan lanjut ke forEach
+    return; 
   }
 
-  // 2. Jika ada data, baru jalankan loop forEach
   snapshot.forEach((d) => {
     const r = d.data();
     table.innerHTML += `
@@ -173,7 +213,7 @@ onSnapshot(collection(db, "permintaan"), (snapshot) => {
                 <td>${r.bidang}</td>
                 <td><input type="number" id="edit-${d.id}" value="${r.jumlah}" style="width:60px"></td>
                 <td>
-                    <button onclick="approve('${d.id}', '${r.nama_barang}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">ACC</button>
+                    <button onclick="approve('${d.id}', '${r.nama_barang}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Approve</button>
                     <button onclick="reject('${d.id}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Tolak</button>
                 </td>
             </tr>`;
@@ -181,38 +221,32 @@ onSnapshot(collection(db, "permintaan"), (snapshot) => {
 });
 
 window.approve = async (id, namaBarang) => {
-  // 1. Ambil nilai Qty dari input (hasil edit Super Admin di tabel)
   const newQty = parseInt(document.getElementById(`edit-${id}`).value);
 
   try {
-    // 2. Ambil data asli dari koleksi 'permintaan' untuk mendapatkan nama bidang
     const reqRef = doc(db, "permintaan", id);
     const reqSnap = await getDoc(reqRef);
 
     if (!reqSnap.exists()) return alert("Data permintaan tidak ditemukan!");
     const dataPermintaan = reqSnap.data();
 
-    // 3. Cek stok di koleksi 'barang'
     const barangRef = doc(db, "barang", namaBarang);
     const barangSnap = await getDoc(barangRef);
 
     if (barangSnap.exists() && barangSnap.data().stock >= newQty) {
-      // A. UPDATE STOK: Kurangi stok utama
       await updateDoc(barangRef, {
         stock: increment(-newQty),
         update: serverTimestamp(),
       });
 
-      // B. SIMPAN KE TRANSAKSI: Catat riwayat keluar
       await addDoc(collection(db, "transaksi"), {
-        nama_barang: namaBarang, // Diambil dari parameter
-        qty: newQty, // Diambil dari input edit
-        jenis_transaksi: false, // Penanda barang keluar
-        bidang: dataPermintaan.bidang, // Diambil otomatis dari data user request
-        created_at: serverTimestamp(), // Waktu server
+        nama_barang: namaBarang, 
+        qty: newQty, 
+        jenis_transaksi: false, 
+        bidang: dataPermintaan.bidang,
+        created_at: serverTimestamp(), 
       });
 
-      // C. HAPUS REQUEST: Bersihkan antrian permintaan
       await deleteDoc(reqRef);
 
       alert(
@@ -233,17 +267,52 @@ window.reject = async (id) => {
 
 // --- 5. RENDER STOK REALTIME ---
 onSnapshot(collection(db, "barang"), (snapshot) => {
-  const table = document.getElementById("list-stok");
+    const tables = document.querySelectorAll(".list-stok");
+    
+    tables.forEach(table => table.innerHTML = "");
+
+    snapshot.forEach((d) => {
+        const b = d.data();
+        const rowHTML = `
+            <tr>
+                <td>${b.nama_barang}</td>
+                <td>${b.stock}</td>
+                <td>${b.update?.toDate().toLocaleDateString() || "..."}</td>
+            </tr>`;
+
+        tables.forEach(table => {
+            table.innerHTML += rowHTML;
+        });
+    });
+});
+
+const q = query(
+  collection(db, "transaksi"),
+  where("jenis_transaksi", "==", false),
+);
+
+onSnapshot(q, (snapshot) => {
+  const table = document.getElementById("list-transaksi");
   table.innerHTML = "";
+
+  if (snapshot.empty) {
+    table.innerHTML =
+      "<tr><td colspan='3'>Tidak ada barang keluar.</td></tr>";
+    return;
+  }
+
   snapshot.forEach((d) => {
     const b = d.data();
-    table.innerHTML += 
-    `<tr>
-        <td>${b.nama_barang}</td>
-        <td>${b.stock}</td>
-        <td>${b.update?.toDate().toLocaleString() || "..."}</td>
-    </tr>`;
+    table.innerHTML += `
+            <tr>
+                <td>${b.nama_barang}</td>
+                <td>${b.bidang}</td>
+                <td>${b.qty}</td>
+                <td>${b.created_at?.toDate().toLocaleDateString() || "..."}</td>
+            </tr>`;
   });
 });
+
+
 
 window.logout = () => signOut(auth);

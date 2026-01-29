@@ -8,15 +8,65 @@ body {
 
 .container {
     width: 100%;
-    max-width: 600px;
+    padding: 10px 70px;
+    /* max-width: 600px; */
 }
 
-.card {
+.form-card {
+    width: 30%;
+    height: max-content;
     background: white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     margin-bottom: 20px;
+}
+
+.form-card h3{
+    text-align: center;
+}
+
+.card {
+    width: 45%;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.card h3{
+    text-align: center;
+}
+
+.stock-card {
+    width: 60%;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.stock-card h3{
+    text-align: center;
+}
+
+.content-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+#panel-bidang {
+    display: flex; /* Aktifkan mode baris */
+    flex-direction: column; /* Tetap susun ke bawah secara default */
+}
+
+#panel-bidang > :last-child {
+    align-self: flex-end; /* Geser dirinya sendiri ke kanan */
+    width: 60%; /* Atur lebar agar tidak memenuhi layar jika diinginkan */
 }
 
 input {

@@ -7,59 +7,121 @@
 </head>
 <body>
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 id="status-role">Memuat Hak Akses...</h2>
-            <button onclick="logout()" style="background: #666;">Logout</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 20px;">
+            <h2 id="status-role" style="margin: 0;">Memuat Hak Akses...</h2>
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="file" id="importExcel" accept=".xlsx, .xls" style="display: none;" onchange="prosesExcel(event)">
+                
+                <button id="btn-import-excel" 
+                        onclick="document.getElementById('importExcel').click()" 
+                        style="background: #217346; color: white; display: none;">
+                    Import Excel
+                </button>
+                
+                <button onclick="logout()" style="background: #666; color: white;">Logout</button>
+            </div>
         </div>
 
         <div id="panel-superadmin" style="display: none;">
-            <div class="card">
-                <h3>Master Data / Barang Masuk</h3>
-                <input type="text" id="itemName" placeholder="Nama Barang">
-                <input type="number" id="itemQty" placeholder="Tambah Stok">
-                <button onclick="updateStok()" class="btn-in">Update/Tambah Stok</button>
+            <div class="content-container">
+                <div class="form-card">
+                    <h3>Master Data / Barang Masuk</h3>
+                    <input type="text" id="itemName" placeholder="Nama Barang">
+                    <input type="number" id="itemQty" placeholder="Tambah Stok">
+                    <button onclick="updateStok()" class="btn-in">Update/Tambah Stok</button>
+                </div>
+
+                <div class="stock-card">
+                    <h3>Stok Gudang Saat Ini</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama Barang</th>
+                                <th>Saldo</th>
+                                <th>Terakhir Update</th>
+                            </tr>
+                        </thead>
+                        <tbody class="list-stok"></tbody>
+                    </table>
+                </div>
             </div>
 
+            <div style="display: flex; flex-direction: row; justify-content: space-between;">
+
+                <div class="card">
+                    <h3>Persetujuan Permintaan Keluar</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Barang</th>
+                                <th>Bidang</th>
+                                <th>Qty</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-permintaan"></tbody>
+                    </table>
+                </div>
+                
+                <div class="card">
+                    <h3>Riwayat Transaksi</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Barang</th>
+                                <th>Bidang</th>
+                                <th>Qty</th>
+                                <th>Tanggal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-transaksi"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-bidang" style="display: none;">
+            <div class="content-container">
+                <div class="form-card">
+                    <h3>Form Permintaan Barang</h3>
+                    <input type="text" id="reqName" placeholder="Nama Barang">
+                    <input type="number" id="reqQty" placeholder="Jumlah yang Diminta">
+                    <button onclick="kirimRequest()" class="btn-out" style="width: 100%;">Kirim Permintaan</button>
+                </div>
+                <div class="stock-card">
+                    <h3>Stok Gudang Saat Ini</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama Barang</th>
+                                <th>Saldo</th>
+                                <th>Terakhir Update</th>
+                            </tr>
+                        </thead>
+                        <tbody class="list-stok"></tbody>
+                    </table>
+                </div>
+            </div>
             <div class="card">
-                <h3>Persetujuan Permintaan Keluar</h3>
+                <h3>Riwayat Transaksi Bidang</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Barang</th>
                             <th>Bidang</th>
                             <th>Qty</th>
-                            <th>Aksi</th>
+                            <th>Tanggal</th>
                         </tr>
                     </thead>
-                    <tbody id="list-permintaan"></tbody>
+                    <tbody id="list-bidang"></tbody>
                 </table>
             </div>
-        </div>
-
-        <div id="panel-bidang" style="display: none;">
-            <div class="card">
-                <h3>Form Permintaan Barang</h3>
-                <input type="text" id="reqName" placeholder="Nama Barang">
-                <input type="number" id="reqQty" placeholder="Jumlah yang Diminta">
-                <button onclick="kirimRequest()" class="btn-out" style="width: 100%;">Kirim Permintaan</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Stok Gudang Saat Ini</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama Barang</th>
-                        <th>Tersedia</th>
-                        <th>Terakhir Update</th>
-                    </tr>
-                </thead>
-                <tbody id="list-stok"></tbody>
-            </table>
         </div>
     </div>
 
     <script type="module" src="script.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script type="module" src="excel.js"></script>
 </body>
 </html>
